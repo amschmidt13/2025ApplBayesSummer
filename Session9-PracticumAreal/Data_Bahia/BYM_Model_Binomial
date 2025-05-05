@@ -1,0 +1,58 @@
+data {
+  int<lower=1> N;  // Number of observations
+  int<lower=1> N_edges;  // Number of edges
+  int<lower=1> p;  // Number of predictors
+  matrix[N, p] X;  // Covariate matrix
+  int<lower=1, upper=N> node1[N_edges];  // node1[i] adjacent to node2[i]
+  int<lower=1, upper=N> node2[N_edges];  // and node1[i] < node2[i]
+  int<lower=0> y[N];  // Number of individuals who consumed UPF
+  int<lower=0> n[N];  // Number of accompanied individuals
+  real<lower=0> scaling_factor;  // Scales the variance of the spatial effects
+}
+
+parameters {
+  real alpha;  // Intercept
+  vector[p] beta;  // Coefficients for predictors
+  real<lower=0> sigma_theta;  // Standard deviation of unstructured random effects
+  real<lower=0> sigma_s;  // Overall standard deviation of spatial effects
+  vector[N] s;  // Spatial effects
+  vector[N] theta;  // Heterogeneous effects
+}
+
+transformed parameters {
+  vector[N] mu;  // Linear predictor
+  vector[N] prob;  // Probabilities for binomial distribution
+
+  for (i in 1:N) {
+    mu[i] = alpha + dot_product(X[i], beta) + s[i] * sigma_s + theta[i];
+    prob[i] = inv_logit(mu[i]);
+  }
+}
+
+model {
+  // Priors
+  alpha ~ normal(0, 1);
+  beta ~ normal(0, 1);
+  sigma_theta ~ cauchy(0, 1);
+  sigma_s ~ cauchy(0, 1);
+
+  // Likelihood
+  y ~ binomial_logit(n, mu);
+
+  // CAR prior for spatial effects
+  target += -0.5 * dot_self(square(s[node1] - s[node2]) / scaling_factor);
+  sum(s) ~ normal(0, 0.001 * N);  // Soft sum-to-zero constraint
+
+  // Unstructured random effects
+  theta ~ normal(0, sigma_theta);
+}
+
+generated quantities {
+  vector[N] log_lik;
+  vector[N] prob_pred;
+
+  for (i in 1:N) {
+    prob_pred[i] = inv_logit(alpha + dot_product(X[i], beta) + s[i] * sigma_s + theta[i]);
+    log_lik[i] = binomial_logit_lpmf(y[i] | n[i], alpha + dot_product(X[i], beta) + s[i] * sigma_s + theta[i]);
+  }
+}
