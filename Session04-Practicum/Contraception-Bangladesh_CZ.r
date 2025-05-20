@@ -3,7 +3,7 @@ library(coda)
 
 
 
-setwd('Session4-PracticumIntroBayes')
+setwd('Session04-Practicum')
 
 bangladesh <- read.csv("bangladesh.csv", sep=";")
 
@@ -149,7 +149,7 @@ codeM2 = nimbleCode({
 })
 
 
-initials<-list(beta0=0.5,b=rnorm(60,0,1))
+initials<-list(beta0=0.5,b=rnorm(60,0,1),tau=0.1)
 
 #
 # Data
