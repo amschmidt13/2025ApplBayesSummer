@@ -1,5 +1,5 @@
 library(tidyverse)
-library(nible)
+library(nimble)
 library(coda)
 
 radon = read.csv("radon.txt", sep=' ')
