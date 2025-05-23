@@ -1,0 +1,380 @@
+---
+output: html_document
+editor_options: 
+  chunk_output_type: console
+---
+## Example 10.14: Spatial modeling of malaria in Gambia {-}
+
+```{r Ex 10.14 clean, include = FALSE}
+rm(list=ls())
+```
+Note: There might be a warning when loading the $\texttt{raster}$ package, if necessary, uninstall and re-install the package. 
+
+For this example we are using the same $\texttt{gambia}$ data set from the $\texttt{geoR}$ package but an $\texttt{id_area}$ column was added using QGIS to differentiate the different areas as in the original paper. Therefore, we need to load the [gambia_area.csv](https://github.com/spacetime-environ/stepi2/blob/main/data/malaria_gambia/gambia_area.csv) file.
+
+```{r Ex 10.14 load libraries and data, message = FALSE, warning=FALSE, error=FALSE}
+
+library(dplyr) # to manipulate the data
+library(geoR) # to get the dataset
+library(ggmap) # to plot the map
+library(nimble) # for modeling
+#library(raster) # to get the environmental data
+# library(rgdal) # for adding and transforming coordinates
+library(sf) # manipulate spatial data
+library(sp) # for manipulating spatial data
+library(stringr) # to analyze posterior
+library(viridis) # for a more cheerful color palette
+
+# Note, we are using the same Gambia dataset as in the geoR package but an id_area
+# attribute has been added using QGIS to a
+gambia <- read.csv("MalariaGambia/gambia_area.csv") # gambia dataset from geoR package
+
+```
+
+Since the data is given at the individual level, we want to aggregate the malaria tests by village. 
+If we explore the data frame we see that there are 2035 individuals at 65 villages. 
+
+```{r Ex 10.14 explore data}
+head(gambia)
+dim(gambia)
+dim(unique(gambia[, c("x", "y")]))
+```
+
+We create a new data frame aggregated by village containing the coordinates, the number of malaria tests, and the prevalence. 
+
+```{r Ex 10.14 aggregate data}
+
+malaria_village <- group_by(gambia, x, y) |>
+  summarize(total = n(),
+            positive = sum(pos),
+            prev = positive / total) |> as.data.frame()
+
+head(malaria_village)
+```
+
+```{r Ex 10.14 plot prevalence, message = FALSE, warning=FALSE}
+
+# create a new variable in "sp" format and define coordinates
+malaria_utm <- malaria_village
+coordinates(malaria_utm) <- ~ x + y
+proj4string(malaria_utm) <- CRS("+proj=utm +zone=28")
+# convert to long lat 
+malaria_geo <- spTransform(malaria_utm, CRS("+proj=longlat +datum=WGS84"))
+# add long lat coordinates to malaria dataframe
+malaria_village[, c("long", "lat")] <- coordinates(malaria_geo)
+malaria_village = st_as_sf(malaria_village, coords = c("long", "lat"),
+                           crs=4326)
+
+# specify the bounding box
+latLongBox = bbox(malaria_geo)
+location = c(latLongBox[1, 1] - 0.05,
+             latLongBox[2, 1] - 0.05,
+             latLongBox[1, 2] + 0.05,
+             latLongBox[2, 2] + 0.05)
+
+# create map with location dots marked on it in
+library(rnaturalearth)
+GambiaMap <- ne_countries(type = "countries",
+                    country = "Gambia",
+                    scale = "large", returnclass = "sf")
+
+ggplot() + geom_sf(data=GambiaMap) + 
+  geom_sf(data = malaria_village,
+          aes(col = prev),
+          size = 2) + scale_color_viridis() + theme_void()
+
+```
+
+
+###  Nimble {-} 
+
+```{r Ex 10.14 nimble model}
+
+Example10_14_Nimble <- nimbleCode({
+  
+  # Define priors
+  sigma ~ T(dt(mu = 0, sigma = 1, df = 1), 0, Inf)
+  sigma_sq <- sigma ^ 2
+  phi_inv ~ dgamma(shape =  5, rate = 5)
+  phi <- 1 / phi_inv
+
+  Sigma[1:N, 1:N] <-
+     sigma_sq*(1 + (sqrt(3)*obs_dist_mat[1:N, 1:N])/phi) * exp(-sqrt(3)*obs_dist_mat[1:N, 1:N] / phi) 
+
+    for(i in 1:N){
+    mean_S[i] <- b0
+    }
+  
+  S[1:N] ~ dmnorm(mean_S[1:N], cov = Sigma[1:N,1:N])
+
+    for (j in 1:n) {  # by child
+    logit(p[j])  <- inprod(b[1:k], X[j,1:k]) + S[index_village[j]]
+    y[j] ~ dbern(p[j])
+    }
+
+  for (l in 1:k){
+    b[l] ~ dnorm(0, sd = 5)
+  }
+  
+  b0 ~ dnorm(0, sd = 5)
+  
+
+
+})
+
+```
+
+```{r Ex 10.14 prepare data nimble model, warning = FALSE, error = FALSE, message = FALSE, results='hide', cache = TRUE}
+# distance specification
+coords_sf <- sf::st_geometry(malaria_village)
+obs_dist_mat <- sf::st_distance(coords_sf)
+obs_dist_mat <- units::set_units(obs_dist_mat, km)
+obs_dist_mat <- units::drop_units(obs_dist_mat)
+
+# define indicator variables for each village
+
+gambia_df <- mutate(
+  gambia,
+  id_child = 1:nrow(gambia), # add an id for each child
+  value = 1, # this will be needed later for the villages
+  id_village = as.numeric(interaction( # add an id for the villages
+    x, y, drop = TRUE, lex.order = TRUE
+  ))
+)  |> 
+  tidyr::spread(id_area, value, fill = 0) |>
+  rename(area1 = '1', area2 = '2', area3 = '3', area4 = '4', area5 = '5')
+
+## Model specification
+# Variables matrix
+X <- data.frame(age = scale(gambia_df[,"age"], center = TRUE, scale = FALSE),
+                netuse = gambia_df[,"netuse"],
+                treated = gambia_df[,"treated"],
+                green = scale(gambia_df[,"green"], center = TRUE, scale = FALSE),
+                phc = gambia_df[,"phc"],
+                area2 = gambia_df[,"area2"],
+                area3 = gambia_df[,"area3"],
+                area4 = gambia_df[,"area4"],
+                area5 = gambia_df[,"area5"]
+                )
+
+index_village <- gambia_df[,"id_village"]
+
+n <- nrow(X) # child number
+N <- nrow(malaria_village) # number of villages
+zeroes <- rep(0, N) # auxiliary vector of zeroes for model
+ones <- rep(1, N)
+
+const_list <- list(n = n, # number of childs
+                   N = N, # number of villages
+                   zeroes = zeroes, # vector of zeroes 
+                   prior_max_dist = max(obs_dist_mat)/6, # max dist for phi prior
+                   k =  ncol(X),# number of predictors
+                   index_village = index_village,
+                   Id10 = 10*diag(N)) 
+
+dat_list <- list(y = gambia_df$pos, # malaria positive test 
+                 obs_dist_mat = obs_dist_mat, # distance matrix in km
+                 X = X # predictors matrix
+                 )
+
+init_list <- list(sigma = 0.5, 
+                  p = rep(expit(rnorm(1, 0, 1)), n), 
+                  phi_inv = 6/max(obs_dist_mat),
+                  b = rep(0, ncol(X)), 
+                  b0 = rnorm(1, 0, 1),
+                  S = rnorm(N, 0, 1))
+
+#init_list <- list(p = runif(n, 0, 1), b = rnorm(ncol(X), 0,  1), b0 = rnorm(1, 0, 1))
+
+Rmodel <-
+  nimbleModel(
+    Example10_14_Nimble,
+    constants = const_list,
+    data = dat_list,
+    inits = init_list
+  )
+Rmodel$initializeInfo()
+Cmodel <- compileNimble(Rmodel, showCompilerOutput = FALSE)
+conf <-
+  configureMCMC(Rmodel, monitors = c( "b0", "b", "p", "S", "sigma", "phi"))
+
+# conf$removeSamplers(c('S'))
+# conf$addSampler(target = c('S'), type = 'AF_slice')
+
+Rmcmc <- buildMCMC(conf)
+Cmcmc <-
+  compileNimble(
+    Rmcmc,
+    project = Cmodel,
+    resetFunctions = TRUE,
+    showCompilerOutput = TRUE
+  )
+niters <- 80000
+nburnins <- 0.5 * niters
+nchains <- 2
+nthins <- 14
+post_samples <- runMCMC(
+  Cmcmc,
+  niter = niters,
+  nburnin = nburnins,
+  thin = nthins,
+  nchains = nchains,
+  samplesAsCodaMCMC = TRUE,
+  summary = TRUE
+)
+```
+
+
+
+```{r Ex 10.14 nimble traceplots ESS }
+
+plot(post_samples$samples[, c("b0")], bty = "n", main = "b0")
+plot(post_samples$samples[, c("b[1]")], bty = "n", main = "b[1]")
+plot(post_samples$samples[, c("b[2]")], bty = "n", main = "b[2]")
+plot(post_samples$samples[, c("b[3]")], bty = "n", main = "b[3]")
+plot(post_samples$samples[, c("b[4]")], bty = "n", main = "b[4]")
+plot(post_samples$samples[, c("b[5]")], bty = "n", main = "b[5]")
+plot(post_samples$samples[, c("b[6]")], bty = "n", main = "b[6]")
+plot(post_samples$samples[, c("sigma")], bty = "n", main = "sigma")
+plot(post_samples$samples[, c("phi")], bty = "n", main = "phi")
+plot(post_samples$samples[, c("S[1]")], bty = "n", main = "S[1]")
+plot(post_samples$samples[, c("S[24]")], bty = "n", main = "S[24]")
+plot(post_samples$samples[, c("S[54]")], bty = "n", main = "S[54]")
+plot(post_samples$samples[, c("p[1]")], bty = "n", main = "p[1]")
+plot(post_samples$samples[, c("p[1805]")], bty = "n", main = "p[1805]")
+
+# Get minimum effective size (ESS) and which variable has the min ESS
+min(coda::effectiveSize(post_samples$samples))
+mcmc_variable_names <- colnames(post_samples$samples$chain1)
+
+mcmc_variable_names[which(coda::effectiveSize(post_samples$samples) == min(coda::effectiveSize(post_samples$samples)))]
+
+```
+
+
+
+```{r Ex 10.14 nimble summary, echo = TRUE}
+
+# Extract samples
+variables <- c("b0", "b[1]", "b[2]", "b[3]", "b[4]", "b[5]", "b[6]", "b[7]", "b[8]", "b[9]" ,"sigma", "phi")
+summary_nimble <- post_samples$summary$all.chains
+summary_nimble[variables,]
+
+```
+
+
+
+```{r Ex 10.14 nimble summary p, echo = TRUE}
+# Plot posterior summary for the spatial random effect by village
+post_summary <- post_samples$summary$all.chains
+
+post_sum_S <-
+  as.data.frame(post_summary) |>  tibble::rownames_to_column() |>
+  filter(str_detect(rowname, "S")) |>
+  dplyr::select(rowname, `95%CI_low`, Mean, `95%CI_upp`)  |>
+  mutate(village = gsub(".*?([0-9]+).*", "\\1", rowname))
+
+post_sum_S$village <-
+  factor(post_sum_S$village , levels = 1:65)
+
+ggplot(data = post_sum_S, aes(x = village)) +
+  geom_pointrange(aes(ymin = `95%CI_low`, ymax = `95%CI_upp`, y = Mean)) +
+  geom_hline(yintercept = 0, linetype = "dotted") +
+  scale_x_discrete(
+    breaks = post_sum_S$village[seq(1, length(post_sum_S$village), by = 5)]) +
+  theme_classic() +  ylab("") + xlab("village") +
+  ggtitle("Posterior summary spatial random effect by village")
+
+```
+
+
+
+### Stan {-}
+
+```{r Ex 10.14 load stan, message=FALSE, echo = FALSE, warning=FALSE, message= FALSE}
+# load rstan with options
+library(rstan)
+options(mc.cores = parallel::detectCores())
+rstan_options(auto_write = TRUE)
+```
+
+
+```{r engine='bash', comment='', echo = FALSE}
+cat functions/Example10_14.stan
+```
+
+
+```{r Ex 10.14 stan data, warning = FALSE, cache = TRUE}
+
+ex.data <- list( n = nrow(gambia), # number of children
+                 k = ncol(X), # number of covariates
+                 N = N, # number of villages
+                 y = gambia$pos, # positive tests
+                 dist_matrix = obs_dist_mat, # distance matrix in km
+                 X = X, # altitude per village
+                 index_village = index_village
+                 )
+
+Example10_14Stan  <- stan(
+  file = "functions/Example10_14.stan",
+  data = ex.data,
+  warmup = 15000,
+  iter = 30000,
+  chains = 2,
+  thin = 10,
+  pars = c("beta0", "betas","sigma", "phi", "S"),
+  include = TRUE
+)
+
+```
+
+```{r Ex 10.14 stan traceplots}
+#computing WAIC using the package loo
+
+rstan::traceplot(Example10_14Stan, pars = c("beta0","betas","sigma",  "phi"))
+
+```
+
+
+```{r Ex 10.14 stan summary, echo = TRUE}
+
+# Extract samples
+summary_stan <-
+  summary(
+    Example10_14Stan,
+    pars = c("beta0","betas", "sigma", "phi"),
+    probs = c(0.025, 0.975)
+  )
+
+summary_stan$summary
+
+```
+
+
+
+```{r Ex 10.14 stan posterior plots}
+S_summary <-
+  summary(Example10_14Stan, pars = c("S"))$summary
+
+S_summary_df <- data.frame(S_summary) |>
+  tibble::rownames_to_column() |>
+  filter(rowname %in% paste0("S[", 1:65, "]")) |>
+  mutate(village = 1:65) |>
+  dplyr::select(mean,  X2.5., X97.5., village)
+
+S_summary_df$village <-
+  factor(S_summary_df$village , levels = 1:65)
+
+
+  ggplot(S_summary_df, aes(x = village, group = 1)) +
+  geom_pointrange(aes(ymin = X2.5., ymax = X97.5., y = mean)) +
+  geom_hline(yintercept = 0, linetype = "dotted") +
+  scale_x_discrete(
+    breaks = S_summary_df$village[seq(1, length(S_summary_df$village), by = 5)]) +
+  theme_classic() +  ylab("") + xlab("village") +
+  ggtitle("Posterior summary spatial random effect by village")
+
+
+
+```
+
