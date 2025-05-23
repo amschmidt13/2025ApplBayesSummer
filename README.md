@@ -16,6 +16,8 @@ devtools::find_rtools()
 Please install also the following R packages (their installation may require some time, depending on your system):
 ```r
 install.packages("tidyverse")
+install.packages("Rcpp")
+install.packages("RcppArmadillo")
 install.packages("sf")
 install.packages("terra")
 install.packages("rnaturalearth")
