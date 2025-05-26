@@ -3,7 +3,7 @@ setwd('Session11-PracticumDLM')
 rm(list=ls())
 library(tidyverse)
 library(Rcpp)
-library(RcppArmadillo)
+library(RcppEigen)
 library(R.matlab)
 library(tictoc)
 library(dlm)
@@ -73,7 +73,7 @@ mod0 = dlmGibbsDIG(Y, myMod,
                        shape.y = 0.01, rate.y = 0.01, 
                        shape.theta = 0.01, rate.theta = 0.01,
                        n.sample = nrep+nburn, thin = thin)
-toc()
+toc() # took 4-5 min on my laptop!
 
 # dynamic coefficients
 dc = mod0$theta[-1,,-(1:nburn)] #(t x n. covariates x iter)
@@ -93,6 +93,7 @@ for (k in 1:dim(X)[2]) {
     geom_line(aes(y=Btrue), col='red')
   print(gg)
 }
+# the MCMC needs to run much more
 
 
 dV = mcmc(mod0$dV[nburn+1:nrep])
@@ -123,12 +124,12 @@ ss = AddDynamicRegression(ss,Y ~ x1+x2)
 tic()
 mod1 <- bsts(Y~z-1, state.specification = ss, niter = nrep+nburn, ping=100,
              family = 'gaussian')
-toc()
+toc() # took ~20 sec
 plot(mod1, "dynamic", burn = nburn)
-plot(mod1, "components", burn = nburn)
+plot(mod1, "components", burn = nburn) # contribution of each state component
 plot(mod1, "coefficients", burn = nburn)
 plot(mod1, "predictors", burn = nburn)
-plot(mod1, "residuals", burn = nburn)
+plot(mod1, "residuals", burn = nburn) # posterior distribution of the residuals given complete data (i.e. looking forward and backward in time)
 
 # dynamic coefficients
 dc = abind(
@@ -175,10 +176,11 @@ prior_list = list(
   s2_a = 0.01,    # Prior shape for measurement error variance
   s2_b = 0.01     # Prior rate for measurement error variance
 )
+print.interval = 100
 
 tic()
-mod2 <- DLM(Y, X, Z, nrep, nburn, thin, prior_list)
-toc()
+mod2 <- DLM(Y, X, Z, nrep, nburn, thin, print.interval, prior_list)
+toc() # took 3 sec!
 ave <- mod2$ave
 out <- mod2$out
 
@@ -210,8 +212,6 @@ data <- read.delim("pollution_milan.txt")
 data$Time = seq(ymd('2018-01-01'), ymd('2022-12-31'), by='1 day')
 head(data)
 
-# I am going to use a smaller dataset for the purpose of illustration
-data = filter(data, Time>='2021-01-01')
 
 t = nrow(data)
 
@@ -228,8 +228,8 @@ summary(modOLS)
 plot(modOLS)
 
 # increase if necessary!
-nrep <- 5000
-nburn <- 5000
+nrep <- 10000
+nburn <- 15000
 thin <- 1
 
 
@@ -237,7 +237,7 @@ thin <- 1
 ss <- AddLocalLevel(list(), Y)
 ss = AddDynamicRegression(ss,Y ~ x1+x2)
 tic()
-mod1 <- bsts(Y, state.specification = ss, niter = nrep+nburn, ping=100,
+mod1 <- bsts(Y, state.specification = ss, niter = nrep+nburn, ping=1000,
              family = 'gaussian')
 toc()
 
@@ -280,13 +280,20 @@ prior_list = list(
 )
 
 tic()
-mod2 <- DLM(Y, X, NULL, nrep, nburn, thin, prior_list)
+mod2 <- DLM(Y, X, NULL, nrep, nburn, thin, 1000, prior_list)
 toc()
 ave <- mod2$ave
 out <- mod2$out
-# some trace plot inspections
-plot(mcmc(t(out$S2_err_mis_)))
-plot(mcmc(t(out$Q1inv_time^-1)))
+
 
 plot.tvc(mod2)
+plot.fitted(mod2, Y)
+mean((Y-ave$Ypred_mean[1,])^2, na.rm = T)
 
+chains = posterior.chains(mod2)
+summary(chains)
+plot(chains)
+
+log_like = out$store_llike
+dim(log_like) = c(t, floor(nrep/thin))
+loo::waic(t(log_like))
