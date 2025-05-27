@@ -11,18 +11,19 @@ devtools::find_rtools()
 - INLA: follow the instructions for your platform [here](https://www.r-inla.org/download-install)
 - Stan: follow the instructions for your platform [here](https://mc-stan.org/install/). We will use two interfaces:
   - RStan: choose the CRAN Installer and follow the instructions.
-  - CmdStanR: choose GitHub (Sourse) as the Installer and follow the instructions.
+  - CmdStanR: choose GitHub (Source) as the Installer and follow the instructions.
 
 Please install also the following R packages (their installation may require some time, depending on your system):
 ```r
 install.packages("tidyverse")
 install.packages("Rcpp")
 install.packages("RcppArmadillo")
+install.packages("RcppEigen")
 install.packages("sf")
 install.packages("terra")
 install.packages("rnaturalearth")
 install.packages("rnaturalearthdata")
-install.packages("rnaturalearthhires")
+devtools::install_github("ropensci/rnaturalearthhires")
 install.packages("nimble")
 install.packages("spdep")
 install.packages("loo")
