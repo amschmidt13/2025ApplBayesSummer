@@ -16,7 +16,7 @@ devtools::find_rtools()
   - RStan: choose the CRAN Installer and follow the instructions.
   - CmdStanR: choose GitHub (Source) as the Installer and follow the instructions.
 
-Please install also the following R packages (their installation may require some time, depending on your system):
+Please also install the following R packages (their installation may require some time, depending on your system):
 ```r
 install.packages("tidyverse")
 install.packages("Rcpp")
@@ -30,5 +30,75 @@ devtools::install_github("ropensci/rnaturalearthhires")
 install.packages("nimble")
 install.packages("spdep")
 install.packages("loo")
+install.packages("knitr")
+install.packages("SpatialEpi")
+install.packages("geobr")
+install.packages("ggplot2")
+install.packages("dplyr")
+
+
 ```
+
+## Schedule
+
+## Tuesday, 3/6
+08.30-09.00 Registration
+
+09.00-10.30 Session 1
+
+10.30-11.00 Coffee break
+
+11.00-12.30 Session 2
+
+12.30-14.00 Lunch
+
+14.00-15.30  Session 3
+
+15.30-16.00 Coffee break
+
+16.00-17.30 Session 4
+
+17.30-18.00 Participants' talks
+
+## Wednesday, 4/6
+09.00-10.30 Session 5   
+
+10.30-11.00 Coffee break
+
+11.00-12.30 Session 6
+
+12.30-14.00 Lunch
+
+14.00-15.30 Session 7
+
+15.30-16.00 Coffee break
+
+16.00-17.30 Session 8
+
+20.00-22.00 Dinner
+
+## Thursday, 5/6
+09.00-10.30 Session 9
+
+10.30-11.00 Coffee break
+
+11.00-13.00 Session 10
+
+13.00-24.00 Free
+
+## Friday, 6/6
+09.00-10.30 Session 11
+
+10.30-11.00 Coffee break
+
+11.00-12.30 Session 12
+
+12.30-14.00 Lunch
+
+14.00-15.30 Session 13
+
+15.30-16.00 Coffee break
+
+16.00-18.00 Session 14
+
 
