@@ -1,1 +1,1 @@
-
+This folder contains the files needed for the Practicum about dynamic linear models with spatio-temporal data. Check file _practicum_spatiotemporal_dlm.pdf_ . The main R script is _pollution_lombardy.R_
