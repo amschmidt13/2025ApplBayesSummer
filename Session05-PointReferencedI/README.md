@@ -1,5 +1,6 @@
 This folder contains the slides for the material on the analysis of Point Referenced (Geostatistics) data. 
 The topics covered are Gaussian Processes; Variogram; Kriging; Bayesian Kriging; the SPDE approach using [R-INLA](https://www.r-inla.org/).
+The file Example-Moraga.r contains an example from [Paula Moraga's website](https://www.paulamoraga.com/book-spatial/sec-geostatisticaldataSPDE.html).
 
 These slides are based on the following books:
 
