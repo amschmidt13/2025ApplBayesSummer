@@ -1,1 +1,1 @@
-This folder contains three datasets and codes to apply the theory discussed in the Point Referenced section of the course.
+This folder contains three datasets and codes to apply the theory discussed in the Point Referenced section of the course. The description of the datasets is available from the file _2025-BayesSummerSchool-Practicum-PointReferencedData.pdf_ .
