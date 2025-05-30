@@ -1,4 +1,7 @@
-This folder contains all the files used in the [Applied Bayesian School 2025](https://abs25.imati.cnr.it/) on "_Spatio-temporal methods in environmental epidemiology with R_" by [Alexandra M. Schmidt (McGill University)](https://alex-schmidt.research.mcgill.ca/) and Carlo Zaccardi (Università degli Studi 'Gabriele d'Annunzio'​ di Chieti-Pescara).
+This folder contains all the files that will be used in the [Applied Bayesian School 2025](https://abs25.imati.cnr.it/) on "_Spatio-temporal methods in environmental epidemiology with R_" by [Alexandra M. Schmidt (McGill University)](https://alex-schmidt.research.mcgill.ca/) and Carlo Zaccardi (Università degli Studi 'Gabriele d'Annunzio'​ di Chieti-Pescara).
+
+The topic of the school is motivated by the second edition of 
+- Shadick, G., Zidek, J. V. and Schmidt, A. M. (2023) Spatio–Temporal Methods in Environmental Epidemiology with R. CRC Press. Second edition.
 
 ## IMPORTANT NOTE
 Please install the following software on your PC in advance to start your lessons smoothly:
