@@ -1,1 +1,1 @@
-This session provides an overview of the content of the course and describes some tools to handle spatial data in R.
+This session provides an overview of the content of the course and describes some tools to handle spatial data in R. The file SpatialData.r replicates the commands in R of the final slides of this session.
