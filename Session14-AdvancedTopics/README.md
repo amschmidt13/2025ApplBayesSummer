@@ -5,7 +5,7 @@ This session discusses some current topics of research: spatial confounding (Zac
 - Douwes-Schultz, D. and Schmidt, A. M. (2022) _Zero-state coupled Markov switching count models for spatio-temporal infectious disease spread_. **Journal of the Royal Statistical Society, Series C**, 
   71(3), 589–612.
   
-- Xu, M., Douwes-Schultz, D. and Schmidt, A. M. (2025) A Comparison Between Markov Switching Zero-inflated and Hurdle Models for Spatio-temporal Infectious Disease Counts. To appear in **Statistics in Medicine**.
+- Xu, M., Douwes-Schultz, D. and Schmidt, A. M. (2025) _A Comparison Between Markov Switching Zero-inflated and Hurdle Models for Spatio-temporal Infectious Disease Counts_. To appear in **Statistics in Medicine**.
   
 - Roy, P. K., Schmidt, A. M., and Fonseca, C. O. (2025) _Accommodating heterogeneous variability in multivariate spatio-temporal processes_. Submitted.
 
