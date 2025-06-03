@@ -1,0 +1,25 @@
+
+model{
+
+   for(i in 1:n){
+    y[i] ~ dnorm(mu[i], prec)
+    mu[i] <- b0 + b1*hr[i] + b2*bp[i] + b3*pkhr[i] + b4*sbp[i] + 
+      b5*age[i] + b6*baseef[i] + b7*gender[i]
+   }
+    y.new~dnorm(mu.new,prec)
+    mu.new<-b0 + b1*hr.new + b2*bp.new + b3*pkhr.new + b4*sbp.new + b5*age.new + b6*baseef.new + b7*gender.new
+  ## Specify priors
+  b0 ~ dnorm(0,0.001)
+  b1 ~ dnorm(0, 0.001)
+  b2 ~ dnorm(0,0.001)
+  b3 ~ dnorm(0,0.001)
+  b4 ~ dnorm(0,0.001)
+  b5 ~ dnorm(0,0.001)
+  b6 ~ dnorm(0,0.001)
+  b7 ~ dnorm(0,0.001)
+  prec<-1/pow(sigma,2)
+  #sigma~dunif(0,100)
+  sigma~dgamma(2,0.001)
+  
+
+}
