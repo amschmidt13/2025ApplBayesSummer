@@ -4,3 +4,5 @@ This session extends the usual geostatistical model to the multivariate case int
 - Schmidt, A. M. and Rodríguez, M. A. (2011) _Modelling multivariate counts varying continuously in space_,  pp. 611-628 in **Bayesian Statistics 9**. Oxford: Oxford University Press, editors J. M. Bernardo, M. J. Bayarri, J. O. Berger, A. P. Dawid, D. Heckerman, A. F. M. Smith and M. West.
 
 This session also discusses the Nearest Neighbor Gaussian Process useful to handle high-dimensional data. We will follow the material prepared by Paritosh K. Roy and available from [https://github.com/paritoshkroy/NNGPinStan](https://github.com/paritoshkroy/NNGPinStan).
+
+[Heaton et al. (2019)](https://link.springer.com/article/10.1007/s13253-018-00348-w) presents a case study competition for analyzing large spatial data.
