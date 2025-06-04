@@ -7,6 +7,7 @@ editor_options:
 
 ```{r Ex 10.14 clean, include = FALSE}
 rm(list=ls())
+setwd('Session07-PracticumPointReferenced')
 ```
 Note: There might be a warning when loading the $\texttt{raster}$ package, if necessary, uninstall and re-install the package. 
 
@@ -96,8 +97,10 @@ Example10_14_Nimble <- nimbleCode({
   sigma ~ T(dt(mu = 0, sigma = 1, df = 1), 0, Inf)
   sigma_sq <- sigma ^ 2
   phi_inv ~ dgamma(shape =  5, rate = 5)
+  # phi_inv ~ dunif(1/91, 1/0.3)
   phi <- 1 / phi_inv
 
+  # Matern kappa=3/2
   Sigma[1:N, 1:N] <-
      sigma_sq*(1 + (sqrt(3)*obs_dist_mat[1:N, 1:N])/phi) * exp(-sqrt(3)*obs_dist_mat[1:N, 1:N] / phi) 
 
@@ -209,7 +212,7 @@ Cmcmc <-
     resetFunctions = TRUE,
     showCompilerOutput = TRUE
   )
-niters <- 80000
+niters <- 8000
 nburnins <- 0.5 * niters
 nchains <- 2
 nthins <- 14
