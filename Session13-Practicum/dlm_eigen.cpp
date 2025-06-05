@@ -1,3 +1,6 @@
+// 2025
+// Code prepared by Carlo Zaccardi
+
 #include <RcppEigen.h>
 #include <algorithm>
 #include <variant>
