@@ -1,3 +1,6 @@
+// 2025
+// Code prepared by Carlo Zaccardi
+
 #include <RcppEigen.h>
 #include <algorithm>
 #include <variant>
@@ -6,7 +9,6 @@
 #include <cmath> // For std::sqrt, std::log, std::abs
 // [[Rcpp::depends(RcppEigen)]]
 // [[Rcpp::plugins(cpp17)]]
-
 
 
 double gamm_rnd(double shape, double scale_inv) {
@@ -473,7 +475,7 @@ Rcpp::List dlm_cpp(
       double term3 = -0.5 * log_det_Sigma;
       store_llike(collect_count) = term1 + term2 + term3;*/
 			// Calculate point-wise log-likelihood
-			Eigen::MatrixXd term1 = -0.5 * yhat.array().square().matrix() / s2_err_mis_draw;
+			Eigen::MatrixXd term1 = -0.5 * yhat.array().square() / s2_err_mis_draw;
 			Eigen::MatrixXd term2 = Eigen::MatrixXd::Constant(p, t, -0.5 * std::log(2.0 * M_PI));
 			Eigen::MatrixXd term3 = Eigen::MatrixXd::Constant(p, t, -0.5 * std::log(s2_err_mis_draw));
 			store_llike[collect_count] = term1 + term2 + term3;
@@ -600,11 +602,10 @@ Rcpp::List dlm_cpp(
   
   Eigen::MatrixXd resid_hat = eta_tilde_hat - theta_hat;
   double sse_hat = resid_hat.array().square().sum();
-  double log_det_Sigma_hat = static_cast<double>(p) * std::log(s2_err_hat);
   
   double term1_hat = -0.5 * sse_hat / s2_err_hat;
   double term2_hat = -0.5 * static_cast<double>(p * t) * std::log(2.0 * M_PI);
-  double term3_hat = -0.5 * log_det_Sigma_hat;
+  double term3_hat = -0.5 * static_cast<double>(p * t) * std::log(s2_err_hat);
   double log_lik_hat = term1_hat + term2_hat + term3_hat;
   double D_hat = -2.0 * log_lik_hat;
   
