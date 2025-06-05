@@ -96,11 +96,6 @@ for (k in 1:dim(X)[2]) {
 # the MCMC needs to run much more
 
 
-dV = mcmc(mod0$dV[nburn+1:nrep])
-plot(dV); summary(dV)
-
-dW = mcmc(mod0$dW[nburn+1:nrep,])
-plot(dW); summary(dW)
 
 # fitted values
 Yfitted = matrix(NA, nrep, t)
