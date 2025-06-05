@@ -1,4 +1,3 @@
-// use for Scotland dataset
 data {
   int<lower=0> N;
   int<lower=0> N_edges;
@@ -13,8 +12,8 @@ transformed data {
   vector[N] log_E = log(E);
 }
 parameters {
-  real beta0;                // intercept
-  real beta1;                // slope
+  real beta0_std;                // intercept
+  real beta1_std;                // slope
   
   real<lower=0> tau_theta;   // precision of heterogeneous effects
   real<lower=0> tau_phi;     // precision of spatial effects
@@ -25,6 +24,8 @@ parameters {
 transformed parameters {
   real<lower=0> sigma_theta = inv(sqrt(tau_theta));  // convert precision to sigma
   real<lower=0> sigma_phi = inv(sqrt(tau_phi));      // convert precision to sigma
+	real beta0 = 5.0 * beta0_std;
+	real beta1 = 5.0 * beta1_std;
 }
 model {
   y ~ poisson_log(log_E + beta0 + beta1 * x + phi * sigma_phi + theta * sigma_theta);
@@ -35,9 +36,9 @@ model {
   // soft sum-to-zero constraint on phi)
 sum(phi) ~ normal(0, 0.001 * N);  // equivalent to mean(phi) ~ normal(0,0.001)
 
-beta0 ~ normal(0, 5);
-beta1 ~ normal(0, 5);
-theta ~ normal(0, 1);
+beta0_std ~ std_normal();
+beta1_std ~ std_normal();
+theta ~ std_normal();
 tau_theta ~ gamma(3.2761, 1.81);  // Carlin WinBUGS priors
 tau_phi ~ gamma(1, 1);            // Carlin WinBUGS priors
 }
